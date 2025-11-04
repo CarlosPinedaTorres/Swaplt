@@ -11,6 +11,7 @@ import { createPaymentIntent, confirmPayment } from "../services/Stripe/stripeSe
 type RootStackParamList = {
   ChatsPrivate: { chatId: number; userId: number };
   DetalleProducto: { producto: ProductDetailsData };
+   DetailsOffer: { producto: ProductDetailsData }; 
 };
 
 type DetalleProductoRouteProp = RouteProp<RootStackParamList, "DetalleProducto">;
@@ -88,7 +89,14 @@ const DetalleProducto = () => {
       <Text style={styles.detalle}>
         Ubicación: {producto.ubicacion || "No especificada"}
       </Text>
-
+<View style={{ marginTop: 20 }}>
+  <Button
+    title="Ofertar producto"
+    onPress={() =>
+      navigation.navigate("DetailsOffer", { producto: producto })
+    }
+  />
+</View>
       <View style={{ marginTop: 20 }}>
         <Button title="Iniciar Chat" onPress={handleIniciarChat} />
       </View>

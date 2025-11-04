@@ -7,9 +7,20 @@ import { refreshUserToken } from "./src/services/user/userService";
 import AuthStack from "./src/navigation/AuthStack";
 import MainStack from "./src/navigation/MainStack";
 import { MenuProvider } from "react-native-popup-menu";
-
+import Toast, { ErrorToast } from "react-native-toast-message";
 import { StripeProvider } from "@stripe/stripe-react-native";
-
+// const toastConfig = {
+//   error: (props: any) => (
+//     <ErrorToast
+//       {...props}
+//       text1NumberOfLines={5}
+//       text2NumberOfLines={5}
+//       style={{ height: 'auto', minHeight: 80 }}
+//       text1Style={{ fontSize: 15 }}
+//       text2Style={{ fontSize: 13 }}
+//     />
+//   ),
+// };
 function App() {
   const { token, refreshToken, login, logout } = useAuthStore();
   const [loading, setLoading] = useState(true);
@@ -25,7 +36,11 @@ function App() {
         });
 
         if (refreshToken) {
-          const response = await refreshUserToken(refreshToken);
+          // console.log({token},{refreshToken})
+            // console.log("🚀APP.TXS RefreshToken que se envía:", JSON.stringify(refreshToken));
+
+           const cleanToken = refreshToken.trim().replace(/[\s\r\n]+/g, "");
+          const response = await refreshUserToken(cleanToken);
           if (canceled) return;
 
           login({
@@ -56,12 +71,14 @@ function App() {
   }
 
   return (
-      <SafeAreaProvider>
+    <SafeAreaProvider>
       <MenuProvider>
-       <StripeProvider publishableKey="pk_test_51SNFIgKm7K5gaMmaD9dKeym453awlGKkNgKmDMVP1TUc3ZGxpxTAViaU8iBvRJ59zB3PeSgxcc6G3dXfOaMf7Oqu00jQEa9URC">
-        <NavigationContainer>
-          {token ? <MainStack /> : <AuthStack />}
-        </NavigationContainer>
+        <StripeProvider publishableKey="pk_test_51SNFIgKm7K5gaMmaD9dKeym453awlGKkNgKmDMVP1TUc3ZGxpxTAViaU8iBvRJ59zB3PeSgxcc6G3dXfOaMf7Oqu00jQEa9URC">
+          <NavigationContainer>
+            {token ? <MainStack /> : <AuthStack />}
+          </NavigationContainer>
+          {/* <Toast config={toastConfig} /> */}
+           <Toast />
         </StripeProvider>
       </MenuProvider>
     </SafeAreaProvider>

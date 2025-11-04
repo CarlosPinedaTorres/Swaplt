@@ -1,8 +1,8 @@
-// components/ScreenContainer.tsx
+
 import React from "react";
 import { View, StyleSheet } from "react-native";
 import { colors } from "../Styles/Colors";
-
+import { RFPercentage } from "react-native-responsive-fontsize";
 export default function ScreenContainer({ children }: { children: React.ReactNode }) {
   return <View style={styles.container}>{children}</View>;
 }
@@ -13,6 +13,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     backgroundColor: colors.fondo,
-    paddingVertical: 20,
+    paddingVertical: RFPercentage(3),
+    paddingHorizontal: RFPercentage(2)
   },
 });

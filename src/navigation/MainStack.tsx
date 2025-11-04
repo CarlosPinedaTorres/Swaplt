@@ -4,6 +4,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import MainTabs from './MainTabs';
 import AddProduct from '../screens/AddProduct';
 import DetalleProducto from '../screens/DetalleProducto';
+import DetailsOffer from '../screens/DetailsOffer';
 import Chats from '../screens/Chats';
 const Stack=createNativeStackNavigator(); 
 
@@ -14,6 +15,7 @@ const MainStack = () => {
         <Stack.Screen name="AddProduct" component={AddProduct}/>
         <Stack.Screen name="DetalleProducto" component={DetalleProducto}/>
          <Stack.Screen name="ChatsPrivate" component={Chats}/>
+            <Stack.Screen name="DetailsOffer" component={DetailsOffer}/>
     </Stack.Navigator>
   )
 }

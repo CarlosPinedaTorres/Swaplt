@@ -6,4 +6,5 @@ export const colors={
     letraSecundaria:"#434141",
     cargando:"#007AFF",
     infoLetra:"#555",
+    error: "#FF4D4F",
 };

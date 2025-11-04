@@ -1,5 +1,7 @@
 import api from "../api";
 import { ProductData } from "../../types/Product";
+
+
 export const getProductOptions = async () => {
   try {
     const { data } = await api.get("/products/getOptions");

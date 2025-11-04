@@ -7,24 +7,11 @@ const api = axios.create({
   timeout: 5000,
 });
 
-api.interceptors.request.use(
-  (config) => {
-    const { token } = useAuthStore.getState();
-    if (token && config.headers) {
-  
-      config.headers.set?.("Authorization", `Bearer ${token}`);
-    }
-    return config;
-  },
-  (error) => Promise.reject(error)
-);
-
-
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
-    const { refreshToken, setToken, logout } = useAuthStore.getState();
+    const { refreshToken, setToken, setRefreshToken, logout } = useAuthStore.getState();
 
     if (
       error.response?.status === 401 &&
@@ -32,15 +19,23 @@ api.interceptors.response.use(
       !originalRequest._retry
     ) {
       originalRequest._retry = true;
+
       try {
-        const data = await refreshUserToken(refreshToken);
+        console.log("🚀 API.TS RefreshToken que se envía:", JSON.stringify(refreshToken));
+
+        const data = await refreshUserToken(refreshToken.trim().replace(/[\s\r\n]+/g, ""));
+        // console.log("🔁 Respuesta del refresh:", data);
+
         setToken(data.accessToken);
-        originalRequest.headers.set?.(
-          "Authorization",
-          `Bearer ${data.accessToken}`
-        );
+        setRefreshToken(data.refreshToken);
+
+
+        originalRequest.headers.set?.("Authorization", `Bearer ${data.accessToken}`);
+
+      
         return api(originalRequest);
       } catch (err) {
+        console.error("Error al refrescar token:", err);
         logout();
         return Promise.reject(err);
       }
@@ -49,5 +44,6 @@ api.interceptors.response.use(
     return Promise.reject(error);
   }
 );
+
 
 export default api;
