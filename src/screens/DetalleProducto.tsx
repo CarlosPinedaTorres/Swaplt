@@ -26,10 +26,10 @@ const DetalleProducto = () => {
   const { producto } = route.params;
   const userIdActual = Number(useAuthStore((state) => state.user?.id));
   const navigation = useNavigation<NavigationProp<RootStackParamList>>();
-  const [cardComplete, setCardComplete] = useState(false);
+
   const [offerModalVisible, setOfferModalVisible] = useState(false);
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
-  const [offerAmount, setOfferAmount] = useState(""); // para la cantidad de la oferta
+  const [offerAmount, setOfferAmount] = useState("");
   const esMiProducto = producto.usuario?.id === userIdActual;
 
   const handleIniciarChat = async () => {
@@ -44,30 +44,57 @@ const DetalleProducto = () => {
 
   const handleComprar = async () => {
     if (!producto.precio) return;
+
     try {
+
       const { clientSecret, transactionId } = await createPaymentIntent(
         producto.precio * 100,
         "eur",
         userIdActual,
         producto.usuario.id,
-        producto.id
+        producto.id,
+        {
+          productoId: producto.id,
+          productoNombre: producto.nombre,
+          compradorId: userIdActual,
+          compradorNombre: useAuthStore.getState().user?.nombre,
+          compradorEmail: useAuthStore.getState().user?.email,
+        }
       );
 
-      const { error } = await stripeConfirmPayment(clientSecret, { paymentMethodType: "Card" });
+
+
+      const { error } = await stripeConfirmPayment(clientSecret, {
+        paymentMethodType: "Card",
+        paymentMethodData: {
+          billingDetails: {
+            name: useAuthStore.getState().user?.nombre || "Usuario",
+            email: useAuthStore.getState().user?.email || "",
+          },
+        },
+      });
 
       if (error) {
         Alert.alert("Error", error.message || "Error al procesar el pago");
         return;
       }
 
+
       await confirmPayment(transactionId);
-      Alert.alert("Éxito", "¡Pago realizado correctamente!");
+
+      Alert.alert(
+        "Éxito",
+        `¡Pago realizado correctamente!\nProducto: ${producto.nombre}\nComprador: ${useAuthStore.getState().user?.nombre}`
+      );
+
       setPaymentModalVisible(false);
+
     } catch (err) {
       console.error(err);
       Alert.alert("Error", "No se pudo procesar el pago");
     }
   };
+
 
   const handleOfertar = () => {
     setOfferModalVisible(true);
@@ -78,7 +105,7 @@ const DetalleProducto = () => {
       Alert.alert("Error", "Introduce una cantidad válida");
       return;
     }
-    // Aquí iría la lógica para enviar la oferta al backend
+
     Alert.alert("Oferta enviada", `Has ofrecido ${offerAmount} € por este producto`);
     setOfferAmount("");
     setOfferModalVisible(false);
@@ -112,6 +139,7 @@ const DetalleProducto = () => {
           {producto.descripcion || "Sin descripción"}
         </Text>
       </View>
+
 
       <View style={styles.card}>
         <Text style={styles.seccion}>Detalles</Text>
@@ -151,7 +179,7 @@ const DetalleProducto = () => {
         </View>
       )}
 
-      {/* Modal de oferta */}
+
       <Modal
         visible={offerModalVisible}
         transparent
@@ -194,7 +222,7 @@ const DetalleProducto = () => {
         </View>
       </Modal>
 
-      {/* Modal de pago */}
+
       <Modal
         visible={paymentModalVisible}
         transparent
@@ -205,27 +233,24 @@ const DetalleProducto = () => {
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Pago con tarjeta</Text>
             <CardForm
-              style={{
-                width: "100%",
-                height: RFPercentage(30), 
-                marginVertical: RFPercentage(2),
-              }}
               onFormComplete={(cardDetails) => {
-               
-                setCardComplete(cardDetails.complete);
-             
+            
                 console.log(cardDetails);
               }}
+              style={{
+                width: "100%",
+                height: RFPercentage(40),
+              }}
               cardStyle={{
-                backgroundColor: "#fff",
-                textColor: "#000",
-                borderWidth: 1,
-                borderColor: "#ccc",
-                borderRadius: RFValue(8),
+                backgroundColor: colors.fondoSecundario,
+                textColor: "#000000",
+                placeholderColor: "#000000",
+                borderRadius: 2,
+                fontSize: 16,
               }}
             />
 
-            <Button title="Pagar ahora" onPress={handleComprar} disabled={!cardComplete} color={colors.letraTitulos} />
+            <Button title="Pagar ahora" onPress={handleComprar} color={colors.letraTitulos} />
             <TouchableOpacity
               style={[styles.modalButton, { backgroundColor: colors.letraSecundaria }]}
               onPress={() => setPaymentModalVisible(false)}
@@ -276,7 +301,7 @@ const styles = StyleSheet.create({
   detalle: { fontSize: fonts.normal, color: colors.infoLetra, marginLeft: RFPercentage(1) },
   buttonsContainer: { marginHorizontal: RFPercentage(2), marginVertical: RFPercentage(2) },
   modalBackground: { flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "center", alignItems: "center" },
-  modalContainer: { width: "80%", backgroundColor: colors.fondoSecundario, borderRadius: RFValue(12), padding: RFPercentage(3) },
+  modalContainer: { width: "80%", backgroundColor: colors.fondo, borderRadius: RFValue(12), padding: RFPercentage(3) },
   modalTitle: { fontSize: fonts.large, fontWeight: "bold", marginBottom: RFPercentage(2), color: colors.letraTitulos, textAlign: "center" },
   modalButton: { backgroundColor: colors.botonFondo, padding: RFPercentage(1.5), borderRadius: RFValue(8), marginVertical: RFPercentage(0.8) },
   modalButtonText: { textAlign: "center", fontSize: fonts.normal, color: "#fff", fontWeight: "bold" },

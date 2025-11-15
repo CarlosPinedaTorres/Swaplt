@@ -1,0 +1,6 @@
+<resources>
+    <color name="colorPrimary">#FFFFFF</color>
+    <color name="colorPrimaryVariant">#E0E0E0</color>
+    <color name="colorSecondary">#000000</color>
+    <color name="bootsplash_background">#ffffff</color>
+</resources>
