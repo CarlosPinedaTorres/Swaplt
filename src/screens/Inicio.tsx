@@ -1,48 +1,62 @@
 import React, { useCallback, useState, useMemo } from "react";
 import { View, Text, FlatList, StyleSheet, Image, ActivityIndicator, Dimensions, TouchableOpacity, KeyboardAvoidingView, Platform, } from "react-native";
-import { getAllProducts } from "../services/product/productService";
+import { getAllProducts, getProductOptions } from "../services/product/productService";
 import { useProductStore } from "../store/useProductStore";
 import { colors } from "../Styles/Colors";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { Menu, MenuOptions, MenuOption, MenuTrigger } from "react-native-popup-menu";
-import Ionicons from "react-native-vector-icons/Ionicons";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { RFValue, RFPercentage } from "react-native-responsive-fontsize";
-import RNPickerSelect from "react-native-picker-select";
+import {  RFPercentage } from "react-native-responsive-fontsize";
 import { fonts } from "../Styles/Fonts";
+import Title from "../components/Title";
+import ProductCard from "../components/ProductCard";
+import ProductFilter from "../components/ProductFilter";
 
-const { width } = Dimensions.get("window");
-const cardWidth = (width - RFPercentage(6)) / 2;
+
 
 export default function Inicio() {
   const navigation = useNavigation<any>();
   const { productosGlobales, setProductosGlobales } = useProductStore();
   const [loading, setLoading] = useState(true);
-
+  const [optionsLoading, setOptionsLoading] = useState(true);
 
   const [categoria, setCategoria] = useState<string | null>(null);
   const [estado, setEstado] = useState<string | null>(null);
+  const [tipo, setTipo] = useState<string | null>(null);
   const [orden, setOrden] = useState<string>("");
+
+  const [categorias, setCategorias] = useState<any[]>([]);
+  const [tipos, setTipos] = useState<any[]>([]);
+  const [estados, setEstados] = useState<any[]>([]);
 
   useFocusEffect(
     useCallback(() => {
-      const fetchAllProducts = async () => {
+      const fetchAllData = async () => {
         try {
           setLoading(true);
-          const data = await getAllProducts();
-          setProductosGlobales(data);
+          setOptionsLoading(true);
+
+          const [productos, opciones] = await Promise.all([
+            getAllProducts(),
+            getProductOptions()
+          ]);
+
+          setProductosGlobales(productos);
+          setCategorias(opciones.categorias);
+          setTipos(opciones.tipos);
+          setEstados(opciones.estados);
         } catch (err) {
-          console.log("Error al obtener productos:", err);
+          console.log("Error al obtener productos u opciones:", err);
         } finally {
           setLoading(false);
+          setOptionsLoading(false);
         }
       };
 
-      fetchAllProducts();
+      fetchAllData();
     }, [])
   );
 
-
+  console.log(productosGlobales)
   const productosFiltrados = useMemo(() => {
     let filtrados = [...productosGlobales];
 
@@ -51,23 +65,26 @@ export default function Inicio() {
         (p) => p.categoria?.nombre?.toLowerCase() === categoria.toLowerCase()
       );
     }
-
     if (estado) {
       filtrados = filtrados.filter(
         (p) => p.estado?.nombre?.toLowerCase() === estado.toLowerCase()
       );
     }
-
-    // if (orden === "asc") {
-    //   filtrados.sort((a, b) => a.precio - b.precio);
-    // } else if (orden === "desc") {
-    //   filtrados.sort((a, b) => b.precio - a.precio);
-    // }
+    if (tipo) {
+      filtrados = filtrados.filter(
+        (p) => p.tipo?.nombre?.toLowerCase() === tipo.toLowerCase()
+      );
+    }
+    if (orden === "asc") {
+      filtrados.sort((a, b) => (a.precio ?? 0) - (b.precio ?? 0));
+    } else if (orden === "desc") {
+      filtrados.sort((a, b) => (b.precio ?? 0) - (a.precio ?? 0));
+    }
 
     return filtrados;
-  }, [productosGlobales, categoria, estado, orden]);
+  }, [productosGlobales, categoria, estado, tipo, orden]);
 
-  if (loading) {
+  if (loading || optionsLoading) {
     return (
       <View style={styles.center}>
         <ActivityIndicator size="large" color={colors.cargando} />
@@ -77,108 +94,38 @@ export default function Inicio() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        style={{ flex: 1 }}
-      >
-        <View style={styles.container}>
-          <Text style={styles.title}>Productos disponibles</Text>
+      <View style={styles.container}>
+        <Title text="Productos disponibles" />
+        <ProductFilter
+          categorias={categorias}
+          estados={estados}
+          tipos={tipos}
+          setCategoria={setCategoria}
+          setEstado={setEstado}
+          setTipo={setTipo}
+          setOrden={setOrden}
+        />
 
+       
 
-          <View style={styles.filterContainer}>
-            <RNPickerSelect
-              onValueChange={(value) => setCategoria(value)}
-              placeholder={{ label: "Categoría", value: null }}
-              items={[
-                { label: "Electrónica", value: "electrónica" },
-                { label: "Hogar", value: "hogar" },
-                { label: "Ropa", value: "ropa" },
-              ]}
-              style={pickerSelectStyles}
+        <FlatList
+          data={productosFiltrados}
+          contentContainerStyle={{ paddingBottom: RFPercentage(4) }}
+          keyExtractor={(item) => item.id.toString()}
+          numColumns={2}
+          columnWrapperStyle={{ justifyContent: "space-between" }}
+          renderItem={({ item }) => (
+            <ProductCard
+              item={item}
+              onPress={() => navigation.navigate("DetalleProducto", { producto: item })}
             />
+          )}
 
-            <RNPickerSelect
-              onValueChange={(value) => setEstado(value)}
-              placeholder={{ label: "Estado", value: null }}
-              items={[
-                { label: "Nuevo", value: "nuevo" },
-                { label: "Usado", value: "usado" },
-              ]}
-              style={pickerSelectStyles}
-            />
-
-            <RNPickerSelect
-              onValueChange={(value) => setOrden(value)}
-              placeholder={{ label: "Ordenar por precio", value: null }}
-              items={[
-                { label: "Menor a mayor", value: "asc" },
-                { label: "Mayor a menor", value: "desc" },
-              ]}
-              style={pickerSelectStyles}
-            />
-          </View>
-
-
-          <FlatList
-            data={productosFiltrados}
-            keyExtractor={(item) => item.id.toString()}
-            numColumns={2}
-            columnWrapperStyle={{
-              justifyContent: "space-between",
-            }}
-            renderItem={({ item }) => (
-              <View style={styles.card}>
-                <TouchableOpacity
-                  style={{ width: "100%" }}
-                  onPress={() =>
-                    navigation.navigate("DetalleProducto", { producto: item })
-                  }
-                >
-                  <Image
-                    source={require("../assets/images/defaultProfile.png")}
-                    style={styles.image}
-                  />
-                  <Text style={styles.nombre}>{item.nombre}</Text>
-                  <Text style={styles.precio}>
-                    {item.precio ? `${item.precio} €` : "Sin precio"}
-                  </Text>
-                  <Text style={styles.detalle}>
-                    {item.categoria.nombre} · {item.estado.nombre}
-                  </Text>
-                </TouchableOpacity>
-
-                <View style={styles.menuContainer}>
-                  <Menu>
-                    <MenuTrigger>
-                      <Ionicons
-                        name="ellipsis-vertical"
-                        size={20}
-                        color={colors.infoLetra}
-                      />
-                    </MenuTrigger>
-                    <MenuOptions>
-                      <MenuOption
-                        onSelect={() =>
-                          navigation.navigate("EditarProducto", { producto: item })
-                        }
-                      >
-                        <Text style={{ padding: 8 }}>✏️ Editar</Text>
-                      </MenuOption>
-                      <MenuOption onSelect={() => console.log("hola")}>
-                        <Text style={{ padding: 8, color: "red" }}>🗑️ Eliminar</Text>
-                      </MenuOption>
-                    </MenuOptions>
-                  </Menu>
-                </View>
-              </View>
-            )}
-            ListEmptyComponent={() => (
-              <Text style={styles.emptyText}>No hay productos disponibles</Text>
-            )}
-            contentContainerStyle={{ paddingBottom: 20 }}
-          />
-        </View>
-      </KeyboardAvoidingView>
+          ListEmptyComponent={() => (
+            <Text style={styles.emptyText}>No hay productos disponibles</Text>
+          )}
+        />
+      </View>
     </SafeAreaView>
   );
 }
@@ -200,50 +147,13 @@ const styles = StyleSheet.create({
     marginBottom: RFPercentage(1),
     color: colors.letraSecundaria,
   },
-  filterContainer: {
-    flexDirection: "column",
-    gap: RFPercentage(1),
-    marginBottom: RFPercentage(2),
-  },
+
   center: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  card: {
-    backgroundColor: colors.fondoSecundario,
-    width: cardWidth,
-    borderRadius: RFValue(10),
-    padding: RFPercentage(1.5),
-    marginBottom: RFPercentage(2),
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-    elevation: 3,
-    position: "relative",
-  },
-  image: {
-    width: "100%",
-    height: RFPercentage(20),
-    borderRadius: RFValue(10),
-    resizeMode: "cover",
-    marginBottom: RFPercentage(1),
-  },
-  nombre: {
-    fontSize: fonts.medium,
-    fontWeight: "600",
-    color: colors.letraSecundaria,
-  },
-  precio: {
-    fontSize: fonts.small,
-    color: colors.infoLetra,
-    marginTop: RFPercentage(0.5),
-  },
-  detalle: {
-    fontSize: fonts.small,
-    color: colors.infoLetra,
-    marginTop: RFPercentage(0.5),
-  },
+  
   emptyText: {
     textAlign: "center",
     marginTop: RFPercentage(3),
@@ -255,23 +165,8 @@ const styles = StyleSheet.create({
     top: RFPercentage(1),
     right: RFPercentage(1),
   },
+
 });
 
-const pickerSelectStyles = {
-  inputIOS: {
-    backgroundColor: colors.fondoSecundario,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
-    borderRadius: 10,
-    color: colors.letraSecundaria,
-    fontSize: RFValue(14),
-  },
-  inputAndroid: {
-    backgroundColor: colors.fondoSecundario,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    color: colors.letraSecundaria,
-    fontSize: RFValue(14),
-  },
-};
+
+

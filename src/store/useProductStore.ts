@@ -23,7 +23,9 @@ interface Product {
   descripcion: string;
   precio: number | null;
   categoria: { nombre: string };
-  tipo: { nombre: string };
+  tipo: {
+    toLowerCase(): unknown; nombre: string 
+};
   estado: { nombre: string };
   ubicacion?: string;
   disponibilidad: boolean;

@@ -1,3 +1,8 @@
+
+export type UpdateProductData = Partial<Omit<ProductData, "userId">> & {
+  disponibilidad?: boolean;
+};
+
 export interface ProductData {
   nombre: string;
   descripcion: string;
@@ -14,12 +19,17 @@ export interface ProductData {
 export interface ProductDetailsData {
   id: number;
   nombre: string;
-  descripcion: string;
   precio?: number;
-  categoria: { nombre: string }; 
+  descripcion?: string;
+  categoria: { nombre: string };
   tipo: { nombre: string };
   estado: { nombre: string };
-  userId: number;
-  ubicacion?: string;
   disponibilidad: boolean;
+  ubicacion?: string;
+  userId: number;
+  usuario: {
+    id: number;
+    nombre: string; 
+  };
+
 }

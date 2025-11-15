@@ -1,5 +1,28 @@
 import api from "../api";
-import { ProductData } from "../../types/Product";
+import { ProductData,ProductDetailsData,UpdateProductData } from "../../types/Product";
+
+
+
+export const updateProduct = async (id: number, updatedData: Partial<UpdateProductData>) => {
+  try {
+    const { data } = await api.patch(`/products/updateProduct/${id}`, updatedData);
+    return data;
+  } catch (error) {
+    console.log("Error actualizando producto:", error);
+    throw error;
+  }
+};
+export const deleteProduct = async (id: number) => {
+  try {
+    const { data } = await api.delete(`/products/deleteProduct/${id}`);
+    return data;
+  } catch (error) {
+    console.log("Error eliminando producto:", error);
+    throw error;
+  }
+};
+
+
 
 
 export const getProductOptions = async () => {
@@ -42,3 +65,4 @@ export const getAllProducts=async()=>{
       throw err
     }
 }
+

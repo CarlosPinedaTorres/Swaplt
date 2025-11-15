@@ -23,3 +23,12 @@ export interface UserDataProfile{
     edad:string;
     ciudad:string;
 }
+
+export interface EditUserData {
+  nombre?: string;
+  apellidos?: string;
+  ciudad?: string;
+  email?: string;
+  fotoPerfil?: string | null;
+}
+

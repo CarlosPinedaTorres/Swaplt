@@ -1,6 +1,6 @@
 
 import api from "../api";
-import { UserData, UserDataLogin } from '../../types/User';
+import { EditUserData, UserData, UserDataLogin } from '../../types/User';
 
 export const registerUser=async(userData:UserData)=>{
     try{
@@ -11,6 +11,18 @@ export const registerUser=async(userData:UserData)=>{
         throw error;
     }
 }
+
+export const editUser=async(userData:EditUserData)=>{
+    try{
+        const {data}=await api.put("/users/update",userData)
+        return data;
+    }catch(error){
+        console.log(error);
+        throw error;
+    }
+}
+
+
 
 export const loginUser=async(userDataLogin:UserDataLogin)=>{
     try{

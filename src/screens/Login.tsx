@@ -10,8 +10,8 @@ import CustomButton from '../components/CustomButton';
 import { useNavigation } from '@react-navigation/native';
 import { useAuthStore } from '../store/useAuthStore';
 import DeviceInfo from 'react-native-device-info';
-import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { KeyboardAvoidingView, Platform } from 'react-native';
 import { RFValue, RFPercentage } from "react-native-responsive-fontsize";
 import { fonts } from '../Styles/Fonts';
