@@ -13,20 +13,7 @@ import { MenuProvider } from "react-native-popup-menu";
 import Toast, { ErrorToast } from "react-native-toast-message";
 import { StripeProvider } from "@stripe/stripe-react-native";
 import { StatusBar } from "react-native";
-// import RNBootSplash from "react-native-bootsplash";
 
-// const toastConfig = {
-//   error: (props: any) => (
-//     <ErrorToast
-//       {...props}
-//       text1NumberOfLines={5}
-//       text2NumberOfLines={5}
-//       style={{ height: 'auto', minHeight: 80 }}
-//       text1Style={{ fontSize: 15 }}
-//       text2Style={{ fontSize: 13 }}
-//     />
-//   ),
-// };
 function App() {
   const { token, refreshToken, login, logout } = useAuthStore();
   const [loading, setLoading] = useState(true);

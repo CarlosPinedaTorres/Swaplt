@@ -7,11 +7,12 @@ import { RFValue, RFPercentage } from "react-native-responsive-fontsize";
 import { ProductDetailsData } from "../types/Product";
 import { createOrGetChat } from "../services/chats/chatsService";
 import { useAuthStore } from "../store/useAuthStore";
-import { useStripe, CardField } from "@stripe/stripe-react-native";
-import { createPaymentIntent, confirmPayment } from "../services/Stripe/stripeService";
+import { useStripe } from "@stripe/stripe-react-native";
+import { createDirectPurchaseOperation,createOperationPaymentIntent,confirmOperationPayment } from "../services/Stripe/stripeService";
 import ImageCarousel from "../components/ImageCarrousel";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import { CardForm } from "@stripe/stripe-react-native";
+import { createOfferOperation } from "../services/Offers/offerService";
 type RootStackParamList = {
   ChatsPrivate: { chatId: number; userId: number };
   DetalleProducto: { producto: ProductDetailsData };
@@ -42,74 +43,85 @@ const DetalleProducto = () => {
     }
   };
 
-  const handleComprar = async () => {
-    if (!producto.precio) return;
+const handleComprar = async () => {
+  if (!producto.precio) return;
 
-    try {
-
-      const { clientSecret, transactionId } = await createPaymentIntent(
-        producto.precio * 100,
-        "eur",
-        userIdActual,
-        producto.usuario.id,
-        producto.id,
-        {
-          productoId: producto.id,
-          productoNombre: producto.nombre,
-          compradorId: userIdActual,
-          compradorNombre: useAuthStore.getState().user?.nombre,
-          compradorEmail: useAuthStore.getState().user?.email,
-        }
-      );
+  try {
+   console.log(producto)
+const { operationId: createdOperationId } = await createDirectPurchaseOperation(
+      userIdActual,        
+      producto.usuario.id,   
+      producto.id,           
+      producto.precio        
+    );
 
 
+const { clientSecret } = await createOperationPaymentIntent(createdOperationId);
 
-      const { error } = await stripeConfirmPayment(clientSecret, {
-        paymentMethodType: "Card",
-        paymentMethodData: {
-          billingDetails: {
-            name: useAuthStore.getState().user?.nombre || "Usuario",
-            email: useAuthStore.getState().user?.email || "",
-          },
+  
+    const { error } = await stripeConfirmPayment(clientSecret, {
+      paymentMethodType: "Card",
+      paymentMethodData: {
+        billingDetails: {
+          name: useAuthStore.getState().user?.nombre || "Usuario",
+          email: useAuthStore.getState().user?.email || "",
         },
-      });
+      },
+    });
 
-      if (error) {
-        Alert.alert("Error", error.message || "Error al procesar el pago");
-        return;
-      }
-
-
-      await confirmPayment(transactionId);
-
-      Alert.alert(
-        "Éxito",
-        `¡Pago realizado correctamente!\nProducto: ${producto.nombre}\nComprador: ${useAuthStore.getState().user?.nombre}`
-      );
-
-      setPaymentModalVisible(false);
-
-    } catch (err) {
-      console.error(err);
-      Alert.alert("Error", "No se pudo procesar el pago");
+    if (error) {
+      Alert.alert("Error", error.message || "Error al procesar el pago");
+      return;
     }
-  };
+
+  
+    await confirmOperationPayment(createdOperationId);
+
+    Alert.alert(
+      "Éxito",
+      `¡Pago realizado correctamente!\nProducto: ${producto.nombre}\nComprador: ${useAuthStore.getState().user?.nombre}`
+    );
+
+    setPaymentModalVisible(false);
+  } catch (err) {
+    console.error(err);
+    Alert.alert("Error", "No se pudo procesar el pago");
+  }
+};
+
 
 
   const handleOfertar = () => {
     setOfferModalVisible(true);
   };
 
-  const enviarOfertaMonetaria = () => {
-    if (!offerAmount || isNaN(Number(offerAmount))) {
-      Alert.alert("Error", "Introduce una cantidad válida");
-      return;
+const enviarOfertaMonetaria = async () => {
+  if (!offerAmount || isNaN(Number(offerAmount))) {
+    Alert.alert("Error", "Introduce una cantidad válida");
+    return;
+  }
+  
+  try {
+    
+    const response = await createOfferOperation({
+      requesterId: userIdActual,     
+      mainProductId: producto.id,  
+      moneyOffered: Number(offerAmount),
+      offeredProductIds: []         
+    });
+ 
+    if (response?.operationId) {
+      Alert.alert("Éxito", `Oferta enviada: ${offerAmount} €`);
+      setOfferAmount("");
+      setOfferModalVisible(false);
+    } else {
+      Alert.alert("Error", "No se pudo enviar la oferta");
     }
-
-    Alert.alert("Oferta enviada", `Has ofrecido ${offerAmount} € por este producto`);
-    setOfferAmount("");
-    setOfferModalVisible(false);
-  };
+  } catch (error) {
+    console.error(error);
+    Alert.alert("Error", "Ocurrió un error al enviar la oferta");
+  }
+};
 
   return (
     <ScrollView style={styles.container}>

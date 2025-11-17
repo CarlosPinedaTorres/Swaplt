@@ -15,7 +15,15 @@ export interface ProductData {
 
 }
 
-
+export interface OperationPaymentIntentData {
+  clientSecret: string;
+  operationId: number;
+  productId: number;
+  productName: string;
+  productPrice: number;
+  requesterId: number;
+  receiverId: number;
+}
 export interface ProductDetailsData {
   id: number;
   nombre: string;

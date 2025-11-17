@@ -40,7 +40,7 @@ const DetailsOffer = () => {
       return;
     }
     try {
-      // await sendOffer(userId, producto.userId, producto.id, selectedProduct);
+     
       Alert.alert("Éxito", "Oferta enviada correctamente");
       navigation.goBack();
     } catch (err) {
