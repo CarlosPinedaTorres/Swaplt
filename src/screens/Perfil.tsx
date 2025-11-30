@@ -65,6 +65,7 @@ const Perfil = () => {
 
           setWallet(walletData);
           setProductosUsuario(misProductos);
+         
           setCategorias(opciones.categorias);
           setTipos(opciones.tipos);
           setEstados(opciones.estados);
@@ -154,6 +155,7 @@ const Perfil = () => {
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.fondo }}>
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.cargando} />
+
         </View>
       </SafeAreaView>
     );
@@ -164,9 +166,7 @@ const Perfil = () => {
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.fondo }}>
         <View style={styles.center}>
           <Text>No se encontró información del perfil.</Text>
-          <TouchableOpacity onPress={handleLogout}>
-            <Text style={{ color: colors.letraSecundaria, marginTop: 10 }}>Cerrar sesión</Text>
-          </TouchableOpacity>
+      
         </View>
       </SafeAreaView>
     );

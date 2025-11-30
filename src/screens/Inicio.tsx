@@ -39,8 +39,9 @@ export default function Inicio() {
             getAllProducts(),
             getProductOptions()
           ]);
-
+        
           setProductosGlobales(productos);
+    
           setCategorias(opciones.categorias);
           setTipos(opciones.tipos);
           setEstados(opciones.estados);
@@ -56,7 +57,7 @@ export default function Inicio() {
     }, [])
   );
 
-  console.log(productosGlobales)
+
   const productosFiltrados = useMemo(() => {
     let filtrados = [...productosGlobales];
 
@@ -91,7 +92,7 @@ export default function Inicio() {
       </View>
     );
   }
-
+ 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>

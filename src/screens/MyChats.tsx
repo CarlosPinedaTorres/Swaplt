@@ -1,9 +1,11 @@
 import { View, Text, FlatList, StyleSheet, TouchableOpacity } from "react-native";
-import React, { useCallback, useEffect, useState } from "react";
-import { getMyChats } from "../services/chats/chatsService"; 
-import { useAuthStore } from "../store/useAuthStore"; 
+import React, { useCallback, useState } from "react";
+import { getMyChats } from "../services/chats/chatsService";
+import { useAuthStore } from "../store/useAuthStore";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
-import { connectSocket } from "../services/chats/socket";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
+import { fonts } from "../Styles/Fonts";
 
 interface ChatItem {
   id: number;
@@ -15,35 +17,37 @@ interface ChatItem {
 
 const MyChats = () => {
   const [chats, setChats] = useState<ChatItem[]>([]);
-  const { user } = useAuthStore(); 
-  const navigation = useNavigation<any>(); 
+  const { user } = useAuthStore();
+  const navigation = useNavigation<any>();
 
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) return;
 
+      const fetchChats = async () => {
+        try {
+          const userId = Number(user.id);
+          const data = await getMyChats(userId);
+          setChats(data);
+          console.log("Chats cargados:", data);
+        } catch (err) {
+          console.error("Error cargando chats:", err);
+        }
+      };
 
-useFocusEffect(
-  useCallback(() => {
-    if (!user) return;
+      fetchChats();
+    }, [user])
+  );
 
-    const fetchChats = async () => {
-      try {
-        const userId = Number(user.id);
-        const data = await getMyChats(userId);
-        setChats(data);
-        console.log('Chats cargados:', data);
-      } catch (err) {
-        console.error('Error cargando chats:', err);
-      }
-    };
+  const goToChat = (chatId: number, otherUser: { id: number; nombre: string }) => {
+    navigation.navigate("ChatsPrivate", { chatId, otherUser, userId: Number(user?.id) });
+  };
 
-    fetchChats();
-  }, [user])
-);
-const goToChat = (chatId: number, otherUser: { id: number; nombre: string }) => {
-  navigation.navigate("ChatsPrivate", { chatId, otherUser, userId: Number(user?.id) });
-
-};
   const renderItem = ({ item }: { item: ChatItem }) => (
-    <TouchableOpacity style={styles.chatItem}  onPress={() => goToChat(item.id, item.otherUser)}>
+    <TouchableOpacity
+      style={styles.chatItem}
+      onPress={() => goToChat(item.id, item.otherUser)}
+    >
       <Text style={styles.userName}>{item.otherUser.nombre}</Text>
       <Text style={styles.productName}>{item.product.nombre}</Text>
       <Text style={styles.lastMessage}>
@@ -53,22 +57,48 @@ const goToChat = (chatId: number, otherUser: { id: number; nombre: string }) => 
   );
 
   return (
-    <View style={styles.container}>
-  <FlatList
-  data={chats}
-  keyExtractor={(item) => item.id.toString()}
-  renderItem={renderItem}
-/>
-    </View>
+    <SafeAreaView style={styles.container}>
+      <FlatList
+        data={chats}
+        keyExtractor={(item) => item.id.toString()}
+        renderItem={renderItem}
+        contentContainerStyle={{ paddingBottom: RFPercentage(2) }}
+      />
+    </SafeAreaView>
   );
 };
 
 export default MyChats;
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 10 },
-  chatItem: { padding: 10, borderBottomWidth: 1, borderBottomColor: "#ccc" },
-  userName: { fontWeight: "bold" },
-  productName: { color: "#555" },
-  lastMessage: { color: "#777", marginTop: 5 },
+  container: {
+    flex: 1,
+    padding: RFPercentage(2),
+    backgroundColor: "#fff",
+  },
+
+  chatItem: {
+    paddingVertical: RFPercentage(2),
+    paddingHorizontal: RFPercentage(1),
+    borderBottomWidth: 1,
+    borderBottomColor: "#D1D1D1",
+  },
+
+  userName: {
+    fontSize: fonts.medium,
+    fontWeight: "700",
+    color: "#000",
+  },
+
+  productName: {
+    fontSize: fonts.normal,
+    color: "#555",
+    marginTop: RFPercentage(0.5),
+  },
+
+  lastMessage: {
+    fontSize: fonts.small,
+    color: "#777",
+    marginTop: RFPercentage(1),
+  },
 });

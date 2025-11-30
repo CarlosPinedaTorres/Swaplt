@@ -1,17 +1,22 @@
-import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, ScrollView } from "react-native";
+import { launchImageLibrary } from "react-native-image-picker";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { RFPercentage } from "react-native-responsive-fontsize";
 import { useAuthStore } from "../store/useAuthStore";
 import { colors } from "../Styles/Colors";
 import { fonts } from "../Styles/Fonts";
 import { editUser } from "../services/user/userService";
+import api from "../services/api";
 
 const EditarPerfil = ({ navigation }: any) => {
-    const { user, perfil, setPerfil } = useAuthStore();
+    const { perfil, setPerfil } = useAuthStore();
     const [nombre, setNombre] = useState(perfil?.nombre || "");
     const [apellidos, setApellidos] = useState(perfil?.apellidos || "");
     const [ciudad, setCiudad] = useState(perfil?.ciudad || "");
-    const [email, setEmail] = useState(perfil?.email?.toString() || "")
-    const [fotoPerfil, setFotoPerfil] = useState(perfil?.fotoPerfil?.toString() || "")
+    const [email, setEmail] = useState(perfil?.email?.toString() || "");
+    const [image, setImage] = useState<string>(perfil?.fotoPerfil || "");
+
     const handleSave = async () => {
         try {
             const updated = await editUser({
@@ -19,7 +24,7 @@ const EditarPerfil = ({ navigation }: any) => {
                 apellidos,
                 ciudad,
                 email,
-                fotoPerfil,
+                fotoPerfil: image,
             });
             setPerfil(updated);
             Alert.alert("Éxito", "Perfil actualizado correctamente");
@@ -30,72 +35,131 @@ const EditarPerfil = ({ navigation }: any) => {
         }
     };
 
+    const handleUploadImage = async () => {
+        const result = await launchImageLibrary({ mediaType: 'photo' });
+        if (!result.assets || result.assets.length === 0) return;
+
+        const photo = result.assets[0];
+
+        const formData = new FormData();
+        formData.append('image', {
+            uri: photo.uri,
+            type: photo.type,
+            name: photo.fileName || `photo-${Date.now()}.jpg`,
+        } as any);
+
+        try {
+            const response = await api.post("/cloud/upload", formData, {
+                headers: { 'Content-Type': "multipart/form-data" },
+            });
+            setImage(response.data.url);
+        } catch (error) {
+            console.log('Error al subir imagen:', error);
+            Alert.alert("Error", "No se pudo subir la imagen");
+        }
+    };
+
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Editar perfil</Text>
+        <SafeAreaView style={styles.safeArea}>
+            <ScrollView contentContainerStyle={styles.container}>
+                <Text style={styles.title}>Editar perfil</Text>
 
-            <TextInput
-                style={styles.input}
-                placeholder="Nombre"
-                value={nombre}
-                onChangeText={setNombre}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Apellidos"
-                value={apellidos}
-                onChangeText={setApellidos}
-            />
-            <TextInput
-                style={styles.input}
-                placeholder="Ciudad"
-                value={ciudad}
-                onChangeText={setCiudad}
-            />
 
-            <TextInput
-                style={styles.input}
-                placeholder="Correo"
-                keyboardType="email-address"
-                value={email}
-                onChangeText={setEmail}
-            />
+                <TouchableOpacity onPress={handleUploadImage} style={styles.imageWrapper}>
+                    <Image
+                        source={{ uri: image || "https://cdn-icons-png.flaticon.com/512/67/67353.png" }}
+                        style={styles.image}
+                    />
+                    <Text style={styles.changeText}>Cambiar foto</Text>
+                </TouchableOpacity>
 
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
-                <Text style={styles.saveText}>Guardar cambios</Text>
-            </TouchableOpacity>
-        </View>
+
+                <TextInput
+                    style={styles.input}
+                    placeholder="Nombre"
+                    placeholderTextColor={colors.letraSecundaria}
+                    value={nombre}
+                    onChangeText={setNombre}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Apellidos"
+                    placeholderTextColor={colors.letraSecundaria}
+                    value={apellidos}
+                    onChangeText={setApellidos}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Ciudad"
+                    placeholderTextColor={colors.letraSecundaria}
+                    value={ciudad}
+                    onChangeText={setCiudad}
+                />
+                <TextInput
+                    style={styles.input}
+                    placeholder="Correo"
+                    placeholderTextColor={colors.letraSecundaria}
+                    keyboardType="email-address"
+                    value={email}
+                    onChangeText={setEmail}
+                />
+
+
+                <TouchableOpacity style={styles.saveBtn} onPress={handleSave}>
+                    <Text style={styles.saveText}>Guardar cambios</Text>
+                </TouchableOpacity>
+            </ScrollView>
+        </SafeAreaView>
     );
 };
 
 const styles = StyleSheet.create({
+    safeArea: { flex: 1, backgroundColor: colors.fondo },
     container: {
-        flex: 1,
-        backgroundColor: colors.fondo,
-        padding: 20,
+        padding: RFPercentage(3),
+        alignItems: "center",
     },
     title: {
-        fontSize: 20,
-        fontWeight: "bold",
+        fontSize: fonts.title,
         color: colors.letraTitulos,
-        marginBottom: 20,
+        marginBottom: RFPercentage(3),
+    },
+    imageWrapper: {
+        alignItems: "center",
+        marginBottom: RFPercentage(3),
+    },
+    image: {
+        width: RFPercentage(18),
+        height: RFPercentage(18),
+        borderRadius: RFPercentage(9),
+        backgroundColor: "#eee",
+        marginBottom: RFPercentage(1),
+    },
+    changeText: {
+        color: colors.botonFondo,
+
+        fontSize: RFPercentage(2),
     },
     input: {
+        width: "100%",
         backgroundColor: colors.fondoSecundario,
-        borderRadius: 10,
-        padding: 10,
-        marginBottom: 15,
+        borderRadius: RFPercentage(1.5),
+        padding: RFPercentage(1.5),
+        marginBottom: RFPercentage(2),
+        fontSize: fonts.normal,
         color: colors.letraSecundaria,
     },
     saveBtn: {
         backgroundColor: colors.botonFondo,
-        borderRadius: 10,
-        padding: 12,
+        borderRadius: RFPercentage(2),
+        paddingVertical: RFPercentage(1.8),
+        paddingHorizontal: RFPercentage(5),
         alignItems: "center",
+        marginTop: RFPercentage(2),
     },
     saveText: {
-        color: "#fff",
-        fontWeight: "bold",
+        fontSize: fonts.medium, 
+        color: "#fff"
     },
 });
 

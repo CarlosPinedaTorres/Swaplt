@@ -8,6 +8,7 @@ import DetailsOffer from '../screens/DetailsOffer';
 import Chats from '../screens/Chats';
 import EditarPerfil from '../screens/EditarPerfil';
 import EditarProducto from '../screens/EditarProducto';
+import TradeOffer from '../screens/TradeOffer';
 const Stack = createNativeStackNavigator();
 
 const MainStack = () => {
@@ -20,6 +21,8 @@ const MainStack = () => {
       <Stack.Screen name="DetailsOffer" component={DetailsOffer} />
       <Stack.Screen name="EditarPerfil" component={EditarPerfil} />
 <Stack.Screen name="EditarProducto" component={EditarProducto} />
+<Stack.Screen name="TradeOffer" component={TradeOffer} />
+
     </Stack.Navigator>
   )
 }

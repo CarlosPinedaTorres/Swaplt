@@ -24,12 +24,13 @@ interface Product {
   precio: number | null;
   categoria: { nombre: string };
   tipo: {
-    toLowerCase(): unknown; nombre: string 
-};
+    toLowerCase(): unknown; nombre: string
+  };
   estado: { nombre: string };
   ubicacion?: string;
   disponibilidad: boolean;
   visibilidad: boolean;
+  fotos?: { id:number;url: string }[];
 }
 
 interface ProductState extends ProductOptionState {

@@ -3,7 +3,7 @@ import { ProductData,ProductDetailsData,UpdateProductData } from "../../types/Pr
 
 
 
-export const updateProduct = async (id: number, updatedData: Partial<UpdateProductData>) => {
+export const updateProduct = async (id: number, updatedData:UpdateProductData) => {
   try {
     const { data } = await api.patch(`/products/updateProduct/${id}`, updatedData);
     return data;

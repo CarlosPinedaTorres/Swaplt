@@ -1,5 +1,28 @@
 import api from "../api"; 
 
+
+export const acceptOperation = async (operationId: number) => {
+  const response = await api.post("/payments/operation/accept-operation", { operationId });
+  return response.data;
+};
+export const rejectOperation = async (operationId: number) => {
+  const response = await api.post("/payments/operation/reject-operation", { operationId });
+  return response.data;
+};
+
+
+export const getOperationById = async (operationId: number) => {
+  try {
+    const response = await api.get(`/payments/operation/${operationId}`);
+    return response.data;
+  } catch (error) {
+    console.error("Error obteniendo operacion", error);
+    throw error;
+  }
+};
+
+
+
 export const createOfferOperation = async ({
   requesterId,
   mainProductId,

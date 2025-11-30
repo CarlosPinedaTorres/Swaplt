@@ -1,7 +1,21 @@
+export interface ProductImage {
+  id?: number; 
+  url: string;
+}
 
-export type UpdateProductData = Partial<Omit<ProductData, "userId">> & {
+export interface UpdateProductData {
+  nombre: string;
+  descripcion: string;
+  precio?: number;
+  categoriaId: number;
+  tipoId: number;
+  estadoId: number;
+  userId: number;
+  ubicacion?: string;
+  fotos?: ProductImage[];
   disponibilidad?: boolean;
-};
+}
+
 
 export interface ProductData {
   nombre: string;
@@ -12,7 +26,7 @@ export interface ProductData {
   estadoId: number;
   userId: number;
   ubicacion?: string;
-
+  fotos?: string[];
 }
 
 export interface OperationPaymentIntentData {
@@ -37,7 +51,30 @@ export interface ProductDetailsData {
   userId: number;
   usuario: {
     id: number;
-    nombre: string; 
+    nombre: string;
   };
+  fotos?: { url: string }[];
 
+
+}
+export interface Operation {
+  id: number;
+  type: 'SALE' | 'EXCHANGE';
+  status:
+  | 'PENDING'
+  | 'ACCEPTED'
+  | 'PAYMENT_PENDING'
+  | 'PAID'
+  | 'COMPLETED'
+  | 'REJECTED'
+  | 'CANCELLED';
+  createdAt: string;
+  updatedAt: string;
+  requesterId: number;
+  receiverId: number;
+  requester?: { nombre: string };
+  receiver?: { nombre: string };
+  mainProduct?: { nombre: string };
+  moneyOffered?: number;
+  offeredProducts?: { product: { nombre: string } }[];
 }

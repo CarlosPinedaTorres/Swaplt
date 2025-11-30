@@ -8,8 +8,12 @@ import {
   KeyboardAvoidingView,
   Platform,
   Dimensions,
+  TouchableOpacity,
+  Image
 } from "react-native";
 
+
+import { launchImageLibrary } from "react-native-image-picker";
 
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -20,6 +24,8 @@ import Title from "../components/Title";
 import CustomInput from "../components/CustomImput";
 import CustomButton from "../components/CustomButton";
 import CustomPicker from "../components/CustomPicker";
+import api from "../services/api";
+import { RFPercentage } from "react-native-responsive-fontsize";
 
 const { width, height } = Dimensions.get("window");
 
@@ -30,6 +36,7 @@ interface AddProductProps {
 
 const AddProduct: React.FC<AddProductProps> = ({ route, navigation }) => {
   const { userId } = route.params;
+  const [images, setImages] = useState<string[]>([]);
 
   const categorias = useProductStore((state) => state.categorias);
   const tipos = useProductStore((state) => state.tipos);
@@ -80,6 +87,35 @@ const AddProduct: React.FC<AddProductProps> = ({ route, navigation }) => {
 
   const tipoSeleccionado = tipos.find((t) => t.id === formData.tipoId);
   const mostrarPrecio = tipoSeleccionado?.nombre === "Venta" || tipoSeleccionado?.nombre === "Ambos";
+  const handleUploadImage = async () => {
+    const result = await launchImageLibrary({
+      mediaType: "photo",
+      selectionLimit: 1,
+    });
+
+    if (!result.assets || result.assets.length === 0) return;
+
+    const photo = result.assets[0];
+
+    const formData = new FormData();
+    formData.append("image", {
+      uri: photo.uri,
+      type: photo.type,
+      name: photo.fileName || `photo-${Date.now()}.jpg`,
+    } as any);
+
+    try {
+      const response = await api.post("/cloud/upload", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+
+
+      setImages((prev) => [...prev, response.data.url]);
+
+    } catch (error) {
+      console.log("Error al subir imagen:", error);
+    }
+  };
 
   const handleSubmit = async () => {
     const { nombre, descripcion, precio, categoriaId, tipoId, estadoId } = formData;
@@ -94,6 +130,7 @@ const AddProduct: React.FC<AddProductProps> = ({ route, navigation }) => {
       return;
     }
 
+
     try {
       await createProduct({
         nombre,
@@ -104,6 +141,7 @@ const AddProduct: React.FC<AddProductProps> = ({ route, navigation }) => {
         estadoId,
         userId,
         ubicacion: "",
+        fotos: images,
       });
       Alert.alert("Éxito", "Producto creado correctamente");
       navigation.goBack();
@@ -133,6 +171,45 @@ const AddProduct: React.FC<AddProductProps> = ({ route, navigation }) => {
           keyboardShouldPersistTaps="handled"
         >
           <Title text="Añadir Producto" />
+          <View style={{ width: "100%", marginBottom: 20 }}>
+
+            <Text style={{ fontSize: 16, fontWeight: "bold", marginBottom: 10 }}>
+              Fotos del producto
+            </Text>
+
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+
+              {images.map((img, index) => (
+                <Image
+                  key={index}
+                  source={{ uri: img }}
+                  style={{
+                    width: 100,
+                    height: 100,
+                    borderRadius: 10,
+                    marginRight: 10,
+                    backgroundColor: "#eee"
+                  }}
+                />
+              ))}
+
+
+              <TouchableOpacity
+                onPress={handleUploadImage}
+                style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: 10,
+                  borderWidth: 2,
+                  borderColor: colors.letraTitulos,
+                  justifyContent: "center",
+                  alignItems: "center"
+                }}
+              >
+                <Text style={{ fontSize: 40, color: colors.letraTitulos }}>+</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </View>
 
           <CustomInput
             placeholder="Escribe el nombre del producto"
@@ -144,7 +221,10 @@ const AddProduct: React.FC<AddProductProps> = ({ route, navigation }) => {
             placeholder="Escribe una descripción para tu producto"
             value={formData.descripcion}
             onChangeText={(text) => handleChange("descripcion", text)}
+            multiline
+            height={RFPercentage(12)} 
           />
+
 
 
           <CustomPicker
@@ -165,7 +245,7 @@ const AddProduct: React.FC<AddProductProps> = ({ route, navigation }) => {
             />
           )}
 
- 
+
           <CustomPicker
             selectedValue={formData.categoriaId}
             onValueChange={(value) => handleChange("categoriaId", value)}
@@ -175,7 +255,7 @@ const AddProduct: React.FC<AddProductProps> = ({ route, navigation }) => {
             ]}
           />
 
-   
+
           <CustomPicker
             selectedValue={formData.estadoId}
             onValueChange={(value) => handleChange("estadoId", value)}

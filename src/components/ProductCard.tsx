@@ -47,11 +47,16 @@ const ProductCard: React.FC<ProductCardProps> = ({ item, onPress, onEdit, onDele
             });
         }
     };
+    const imageUrl =
+        item.fotos?.length > 0
+            ? { uri: item.fotos[0].url }
+            : require("../assets/images/defaultProfile.png");
+
 
     return (
         <TouchableOpacity activeOpacity={0.85} style={styles.card} onPress={onPress}>
             <Image
-                source={require("../assets/images/defaultProfile.png")}
+                source={imageUrl}
                 style={styles.image}
                 resizeMode="cover"
             />
@@ -76,7 +81,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ item, onPress, onEdit, onDele
                 </Text>
 
                 <Text style={styles.precio}>
-                    {item.precio ? `${item.precio} €` : "Sin precio"}
+                    {item.precio ? `${item.precio} €` : item.tipo?.nombre}
                 </Text>
 
                 <Text style={styles.detalle}>
