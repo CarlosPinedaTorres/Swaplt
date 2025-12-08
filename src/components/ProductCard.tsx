@@ -189,10 +189,11 @@ const styles = StyleSheet.create({
         marginBottom: RFPercentage(1),
     },
     menuButton: {
+
+        backgroundColor: colors.letraTitulos, 
         position: "absolute",
         top: RFValue(8),
         right: RFValue(8),
-        backgroundColor: "rgba(0,0,0,0.2)",
         borderRadius: RFValue(12),
         padding: 4,
         zIndex: 5,

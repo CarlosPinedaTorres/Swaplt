@@ -7,5 +7,14 @@ export const colors = {
   cargando: "#007AFF",
   infoLetra: "#555",
   error: "#FF4D4F",
+  ofertaMonetaria: "#D0E8FF",
+  ofertaIntercambio: "#FFF4D0",
   exito: "#28C76F",
+    estadoPendiente: "#FFA500", 
+  estadoAceptado: "#32CD32",  
+  estadoPagoPendiente: "#FF8C00", 
+  estadoPagado: "#006400",   
+  estadoCompletado: "#1E90FF",
+  estadoRechazado: "#FF0000", 
+  estadoCancelado: "#A9A9A9"
 };

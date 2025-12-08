@@ -5,7 +5,7 @@ const sockets: Record<number, Socket> = {};
 export const connectSocket = (chatId: number): Socket => {
   if (sockets[chatId]) return sockets[chatId];
 
-  const socket = io("http://192.168.18.27:3000", { transports: ["websocket"] });
+  const socket = io("https://back-production-7b31.up.railway.app", { transports: ["websocket"] });
   
   socket.on("connect", () => {
     console.log(`🔌 Conectado al socket del chat ${chatId}`);

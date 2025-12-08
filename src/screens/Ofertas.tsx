@@ -9,6 +9,15 @@ import { NavigationProp, useFocusEffect, useNavigation } from '@react-navigation
 import { Operation } from '../types/Product';
 import { SafeAreaView } from "react-native-safe-area-context";
 import { fonts } from '../Styles/Fonts';
+const statusColors: Record<string, string> = {
+  PENDING: colors.estadoPendiente,
+  ACCEPTED: colors.estadoAceptado,
+  PAYMENT_PENDING: colors.estadoPagoPendiente,
+  PAID: colors.estadoPagado,
+  COMPLETED: colors.estadoCompletado,
+  REJECTED: colors.estadoRechazado,
+  CANCELLED: colors.estadoCancelado,
+};
 
 export type RootStackParamList = {
   Ofertas: undefined;
@@ -25,6 +34,7 @@ export default function Ofertas() {
     REJECTED: "Rechazado",
     CANCELLED: "Cancelado",
   };
+
 
   const userIdActual = Number(useAuthStore((state) => state.user?.id));
   const [allOperations, setAllOperations] = useState<any[]>([]);
@@ -112,37 +122,36 @@ export default function Ofertas() {
       setGroupedOperations({});
     }
   }, [roleFilter, statusFilter, monthFilter, allOperations]);
-  const renderItem = ({ item }: { item: any }) => (
-    <Pressable
-      onPress={() => navigation.navigate('DetailsOffer', { offer: item })}
-      style={({ pressed }) => [
-        styles.itemContainer,
-        pressed && { transform: [{ scale: 0.98 }] }
-      ]}
-    >
-      <Text style={styles.title}>
-        {item.type === 'SALE' ? 'Oferta Monetaria' : 'Intercambio'}
-      </Text>
-      <Text style={styles.itemText}>Producto: {item.mainProduct?.nombre}</Text>
-      {item.moneyOffered && <Text style={styles.itemText}>Monto ofrecido: {item.moneyOffered} €</Text>}
-      {item.offeredProducts?.length > 0 && (
-        <Text style={styles.itemText}>
-          Productos ofrecidos: {item.offeredProducts.map((p: any) => p.product.nombre).join(', ')}
-        </Text>
-      )}
-      <Text style={styles.itemText}>
-        Estado: {statusMap[item.status] || item.status} | Solicitante: {item.requester?.nombre} | Receptor: {item.receiver?.nombre}
-      </Text>
-    </Pressable>
-  );
+  const renderItem = ({ item }: { item: any }) => {
+    const isSale = item.type === "SALE";
+    const itemBackgroundColor = isSale ? colors.ofertaMonetaria : colors.ofertaIntercambio;
 
-  if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color={colors.cargando} />
-      </View>
+      <Pressable
+        onPress={() => navigation.navigate("DetailsOffer", { offer: item })}
+        style={({ pressed }) => [
+          styles.itemContainer,
+          { backgroundColor: itemBackgroundColor },
+          pressed && { transform: [{ scale: 0.98 }] }
+        ]}
+      >
+        <Text style={styles.title}>
+          {isSale ? "Oferta Monetaria" : "Intercambio"}
+        </Text>
+        <Text style={styles.itemText}>Producto: {item.mainProduct?.nombre}</Text>
+        {item.moneyOffered && <Text style={styles.itemText}>Monto ofrecido: {item.moneyOffered} €</Text>}
+        {item.offeredProducts?.length > 0 && (
+          <Text style={styles.itemText}>
+            Productos ofrecidos: {item.offeredProducts.map((p: any) => p.product.nombre).join(", ")}
+          </Text>
+        )}
+        <Text style={[styles.itemText, { color: statusColors[item.status] || "#000" }]}>
+          Estado: {statusMap[item.status] || item.status} | Solicitante: {item.requester?.nombre} | Receptor: {item.receiver?.nombre}
+        </Text>
+      </Pressable>
     );
-  }
+  };
+
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -212,30 +221,36 @@ export default function Ofertas() {
                       {monthNames[Number(month) - 1]} {year}
                     </Text>
 
-                    {groupedOperations[monthKey].map(item => (
-                      <Pressable
-                        key={item.id}
-                        onPress={() => navigation.navigate('DetailsOffer', { offer: item })}
-                        style={({ pressed }) => [
-                          styles.itemContainer,
-                          pressed && { transform: [{ scale: 0.98 }] }
-                        ]}
-                      >
-                        <Text style={styles.title}>
-                          {item.type === 'SALE' ? 'Oferta Monetaria' : 'Intercambio'}
-                        </Text>
-                        <Text style={styles.itemText}>Producto: {item.mainProduct?.nombre}</Text>
-                        {item.moneyOffered && <Text style={styles.itemText}>Monto ofrecido: {item.moneyOffered} €</Text>}
-                        {item.offeredProducts?.length > 0 && (
-                          <Text style={styles.itemText}>
-                            Productos ofrecidos: {item.offeredProducts.map((p: any) => p.product.nombre).join(", ")}
+                    {groupedOperations[monthKey].map(item => {
+                      const isSale = item.type === "SALE";
+                      const itemBackgroundColor = isSale ? colors.ofertaMonetaria : colors.ofertaIntercambio;
+
+                      return (
+                        <Pressable
+                          key={item.id}
+                          onPress={() => navigation.navigate('DetailsOffer', { offer: item })}
+                          style={({ pressed }) => [
+                            styles.itemContainer,
+                            { backgroundColor: itemBackgroundColor },
+                            pressed && { transform: [{ scale: 0.98 }] }
+                          ]}
+                        >
+                          <Text style={styles.title}>
+                            {isSale ? 'Oferta Monetaria' : 'Intercambio'}
                           </Text>
-                        )}
-                        <Text style={styles.itemText}>
-                          Estado: {statusMap[item.status] || item.status} | Solicitante: {item.requester?.nombre} | Receptor: {item.receiver?.nombre}
-                        </Text>
-                      </Pressable>
-                    ))}
+                          <Text style={styles.itemText}>Producto: {item.mainProduct?.nombre}</Text>
+                          {item.moneyOffered && <Text style={styles.itemText}>Monto ofrecido: {item.moneyOffered} €</Text>}
+                          {item.offeredProducts?.length > 0 && (
+                            <Text style={styles.itemText}>
+                              Productos ofrecidos: {item.offeredProducts.map((p: any) => p.product.nombre).join(", ")}
+                            </Text>
+                          )}
+                          <Text style={[styles.itemText, { color: statusColors[item.status] || "#000" }]}>
+                            Estado: {statusMap[item.status] || item.status} | Solicitante: {item.requester?.nombre} | Receptor: {item.receiver?.nombre}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
                   </View>
                 );
               })

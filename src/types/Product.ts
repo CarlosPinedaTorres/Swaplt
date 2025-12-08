@@ -39,6 +39,7 @@ export interface OperationPaymentIntentData {
   receiverId: number;
 }
 export interface ProductDetailsData {
+  visibilidad: boolean;
   id: number;
   nombre: string;
   precio?: number;

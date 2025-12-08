@@ -1,4 +1,4 @@
-import { View, Text, ScrollView, Alert, Button, StyleSheet, Modal, TouchableOpacity, TextInput } from "react-native";
+import { View, Text, ScrollView, Button, StyleSheet, Modal, TouchableOpacity, TextInput } from "react-native";
 import React, { useState } from "react";
 import { RouteProp, useNavigation, NavigationProp, useRoute } from "@react-navigation/native";
 import { colors } from "../Styles/Colors";
@@ -14,6 +14,7 @@ import Ionicons from "react-native-vector-icons/Ionicons";
 import { CardForm } from "@stripe/stripe-react-native";
 import { createOfferOperation } from "../services/Offers/offerService";
 import { SafeAreaView } from "react-native-safe-area-context";
+import Toast from "react-native-toast-message";
 type RootStackParamList = {
   ChatsPrivate: { chatId: number; userId: number };
   DetalleProducto: { producto: ProductDetailsData };
@@ -24,6 +25,8 @@ type RootStackParamList = {
 type DetalleProductoRouteProp = RouteProp<RootStackParamList, "DetalleProducto">;
 
 const DetalleProducto = () => {
+  const [isPaying, setIsPaying] = useState(false);
+
   const { confirmPayment: stripeConfirmPayment } = useStripe();
   const route = useRoute<DetalleProductoRouteProp>();
   const { producto } = route.params;
@@ -41,15 +44,20 @@ const DetalleProducto = () => {
       navigation.navigate("ChatsPrivate", { chatId: chat.id, userId: userIdActual });
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "No se pudo iniciar el chat");
+      Toast.show({ type: "error", text1: "Error", text2: "No se pudo iniciar el chat" });
     }
   };
 
   const handleComprar = async () => {
     if (!producto.precio) return;
 
+    if (isPaying) return;
+
+    setIsPaying(true);
+
     try {
-      console.log(producto)
+      console.log(producto);
+
       const { operationId: createdOperationId } = await createDirectPurchaseOperation(
         userIdActual,
         producto.usuario.id,
@@ -57,9 +65,7 @@ const DetalleProducto = () => {
         producto.precio
       );
 
-
       const { clientSecret } = await createOperationPaymentIntent(createdOperationId);
-
 
       const { error } = await stripeConfirmPayment(clientSecret, {
         paymentMethodType: "Card",
@@ -72,22 +78,24 @@ const DetalleProducto = () => {
       });
 
       if (error) {
-        Alert.alert("Error", error.message || "Error al procesar el pago");
+        Toast.show({ type: "error", text1: "Error", text2: error.message || "Error al procesar el pago" });
         return;
       }
 
-
       await confirmOperationPayment(createdOperationId);
 
-      Alert.alert(
-        "Éxito",
-        `¡Pago realizado correctamente!\nProducto: ${producto.nombre}\nComprador: ${useAuthStore.getState().user?.nombre}`
-      );
-
+      Toast.show({
+        type: "success",
+        text1: "Pago realizado",
+        text2: `Producto: ${producto.nombre}\nComprador: ${useAuthStore.getState().user?.nombre}`,
+      });
+      navigation.goBack();
       setPaymentModalVisible(false);
     } catch (err) {
       console.error(err);
-      Alert.alert("Error", "No se pudo procesar el pago");
+      Toast.show({ type: "error", text1: "Error", text2: "No se pudo procesar el pago" });
+    } finally {
+      setIsPaying(false);
     }
   };
 
@@ -99,10 +107,10 @@ const DetalleProducto = () => {
 
   const enviarOfertaMonetaria = async () => {
     if (!offerAmount || isNaN(Number(offerAmount))) {
-      Alert.alert("Error", "Introduce una cantidad válida");
+      Toast.show({ type: "error", text1: "Error", text2: "Introduce una cantidad válida" });
       return;
     }
-
+   
     try {
 
       const response = await createOfferOperation({
@@ -113,18 +121,18 @@ const DetalleProducto = () => {
       });
 
       if (response?.operationId) {
-        Alert.alert("Éxito", `Oferta enviada: ${offerAmount} €`);
+        Toast.show({ type: "success", text1: "Éxito", text2: `Oferta enviada: ${offerAmount} €` });
         setOfferAmount("");
         setOfferModalVisible(false);
       } else {
-        Alert.alert("Error", "No se pudo enviar la oferta");
+        Toast.show({ type: "error", text1: "Error", text2: "No se pudo enviar la oferta" });
       }
     } catch (error) {
       console.error(error);
-      Alert.alert("Error", "Ocurrió un error al enviar la oferta");
+      Toast.show({ type: "error", text1: "Error", text2: "Ocurrió un error al enviar la oferta" });
     }
   };
-  
+
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: colors.fondo }}>
       <ScrollView style={styles.container}>
@@ -288,8 +296,10 @@ const DetalleProducto = () => {
             <View style={styles.modalContainer}>
               <Text style={styles.modalTitle}>Pago con tarjeta</Text>
               <CardForm
+                defaultValues={{
+                  countryCode: "ES",
+                }}
                 onFormComplete={(cardDetails) => {
-
                   console.log(cardDetails);
                 }}
                 style={{
@@ -305,7 +315,15 @@ const DetalleProducto = () => {
                 }}
               />
 
-              <Button title="Pagar ahora" onPress={handleComprar} color={colors.letraTitulos} />
+
+              <Button
+                title={isPaying ? "Procesando..." : "Pagar ahora"}
+                onPress={handleComprar}
+                color={colors.letraTitulos}
+                disabled={isPaying}
+              />
+
+
               <TouchableOpacity
                 style={[styles.modalButton, { backgroundColor: colors.letraSecundaria }]}
                 onPress={() => setPaymentModalVisible(false)}

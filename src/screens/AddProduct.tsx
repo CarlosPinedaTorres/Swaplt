@@ -3,7 +3,7 @@ import {
   View,
   Text,
   ActivityIndicator,
-  Alert,
+
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -26,6 +26,7 @@ import CustomButton from "../components/CustomButton";
 import CustomPicker from "../components/CustomPicker";
 import api from "../services/api";
 import { RFPercentage } from "react-native-responsive-fontsize";
+import Toast from "react-native-toast-message";
 
 const { width, height } = Dimensions.get("window");
 
@@ -121,12 +122,20 @@ const AddProduct: React.FC<AddProductProps> = ({ route, navigation }) => {
     const { nombre, descripcion, precio, categoriaId, tipoId, estadoId } = formData;
 
     if (!nombre || !descripcion || !categoriaId || !tipoId || !estadoId) {
-      Alert.alert("Error", "Completa todos los campos obligatorios");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Completa todos los campos obligatorios",
+      });
       return;
     }
 
     if (mostrarPrecio && !precio) {
-      Alert.alert("Error", "Debes ingresar un precio para este tipo de producto");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "Debes ingresar un precio para este tipo de producto",
+      });
       return;
     }
 
@@ -143,10 +152,19 @@ const AddProduct: React.FC<AddProductProps> = ({ route, navigation }) => {
         ubicacion: "",
         fotos: images,
       });
-      Alert.alert("Éxito", "Producto creado correctamente");
+      Toast.show({
+        type: "success",
+        text1: "Producto creado",
+        text2: "Producto creado correctamente",
+      });
+
       navigation.goBack();
     } catch (error) {
-      Alert.alert("Error", "No se pudo crear el producto");
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "No se pudo crear el producto",
+      });
     }
   };
 
@@ -222,7 +240,7 @@ const AddProduct: React.FC<AddProductProps> = ({ route, navigation }) => {
             value={formData.descripcion}
             onChangeText={(text) => handleChange("descripcion", text)}
             multiline
-            height={RFPercentage(12)} 
+            height={RFPercentage(12)}
           />
 
 
@@ -270,6 +288,7 @@ const AddProduct: React.FC<AddProductProps> = ({ route, navigation }) => {
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
+      <Toast />
     </SafeAreaView>
   );
 };

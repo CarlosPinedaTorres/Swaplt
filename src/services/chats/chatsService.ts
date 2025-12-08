@@ -24,6 +24,14 @@ export const createOrGetChat = async (user1Id: number, user2Id: number, productI
   return data;
 };
 
+
+export const deleteChat = async (chatId: number): Promise<{ message: string }> => {
+  const { data } = await api.delete(`/chats/delete/${chatId}`);
+  return data; 
+};
+
+
+
 export const sendMessage = async (chatId: number, senderId: number, content: string): Promise<MessageData> => {
   const { data: message } = await api.post("/chats/sendMessages", { chatId, senderId, content });
 

@@ -1,4 +1,4 @@
-import { View, Text, TextInput, StyleSheet, Button, Alert, Touchable, TouchableOpacity, ScrollView } from 'react-native'
+import { View, Text, TextInput, StyleSheet, Button, Touchable, TouchableOpacity, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import CustomInput from '../components/CustomImput'
 import { colors } from '../Styles/Colors';
@@ -32,7 +32,11 @@ export default function Login() {
   const handleLogin = async () => {
     const { email, password } = formData;
     if (!email || !password) {
-      Alert.alert("Error", "Por favor completa los campos obligatorios");
+      Toast.show({
+        type: "error",
+        text1: "Campos incompletos",
+        text2: "Por favor completa los campos obligatorios",
+      });
       return;
     };
     const uniqueId = await DeviceInfo.getUniqueId();
@@ -57,7 +61,11 @@ export default function Login() {
         text2: `Bienvenido ${response.user.nombre}`,
       });
     } catch (error: any) {
-      Alert.alert('Error', error.response?.data?.error || 'Error desconocido');
+      Toast.show({
+        type: "error",
+        text1: "Error al iniciar sesión",
+        text2: error.response?.data?.error || "Error desconocido",
+      });
     }
 
   };

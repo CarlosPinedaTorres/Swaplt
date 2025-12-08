@@ -44,6 +44,15 @@ export const createOfferOperation = async ({
   return response.data;
 };
 
+export const deleteOfferOperation = async (operationId: number) => {
+  try {
+    const response = await api.delete(`/payments/operation/${operationId}/delete`);
+    return response.data;
+  } catch (error) {
+    console.error("Error eliminando operación:", error);
+    throw error;
+  }
+};
 export const getUserOperations = async () => {
   try {
     const response = await api.get("/payments/operation/get-user-operations");

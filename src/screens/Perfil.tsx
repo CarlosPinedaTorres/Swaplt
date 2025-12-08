@@ -1,5 +1,5 @@
-import { FlatList, View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions, Alert } from "react-native";
-import React, { useState, useCallback, useMemo } from "react";
+import { FlatList, View, Text, TouchableOpacity, StyleSheet, ScrollView, Image, ActivityIndicator, KeyboardAvoidingView, Platform, Dimensions, Modal } from "react-native";
+import React, { useState, useCallback, useMemo, useEffect } from "react";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Ionicons from "react-native-vector-icons/Ionicons";
 import Toast from "react-native-toast-message";
@@ -18,22 +18,32 @@ import { getMyProducts, getProductOptions, deleteProduct } from "../services/pro
 import ProductCard from "../components/ProductCard";
 import ProductFilter from "../components/ProductFilter";
 
+
+import { useOptionsStore } from "../store/useOptionStorage";
+
+
+
 const { width, height } = Dimensions.get("window");
 
 const Perfil = () => {
+  const [modalVisible, setModalVisible] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<number | null>(null);
   const { productosUsuario, setProductosUsuario } = useProductStore();
-  const { user, refreshToken, logout, perfil, setPerfil } = useAuthStore();
+  const { user, refreshToken, logout, perfil, setPerfil,hydrated } = useAuthStore();
 
   const [wallet, setWallet] = useState<{ balance: number; pendingBalance: number } | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [categoria, setCategoria] = useState<string | null>(null);
-  const [estado, setEstado] = useState<string | null>(null);
-  const [tipo, setTipo] = useState<string | null>(null);
+  const { categorias, tipos, estados, opcionesCargadas, setOpciones } = useOptionsStore();
+
+  const [categoriaFiltro, setCategoria] = useState<string | null>(null);
+  const [estadoFiltro, setEstado] = useState<string | null>(null);
+  const [tipoFiltro, setTipo] = useState<string | null>(null);
+
+
+
   const [orden, setOrden] = useState<string>("");
-  const [categorias, setCategorias] = useState<any[]>([]);
-  const [tipos, setTipos] = useState<any[]>([]);
-  const [estados, setEstados] = useState<any[]>([]);
+
 
   const navigation = useNavigation<any>();
   const loadMyProducts = async () => {
@@ -45,6 +55,25 @@ const Perfil = () => {
     }
   };
 
+
+
+useEffect(() => {
+  if (!hydrated) return; 
+  if (!perfil && user) {
+    const fetchPerfil = async () => {
+      try {
+        const data = await getUserProfile(user.id);
+        setPerfil(data);
+      } catch (err) {
+        console.log("Error cargando perfil:", err);
+        setPerfil(null);
+      }
+    };
+    fetchPerfil();
+  }
+}, [hydrated, perfil, user]);
+
+
   useFocusEffect(
     useCallback(() => {
       const loadData = async () => {
@@ -52,23 +81,18 @@ const Perfil = () => {
 
         setLoading(true);
         try {
-          if (!perfil) {
-            const data = await getUserProfile(user.id);
-            setPerfil(data);
-          }
-
-          const [misProductos, walletData, opciones] = await Promise.all([
+          const [misProductos, walletData] = await Promise.all([
             getMyProducts(),
             getWallet(),
-            getProductOptions(),
           ]);
 
           setWallet(walletData);
           setProductosUsuario(misProductos);
-         
-          setCategorias(opciones.categorias);
-          setTipos(opciones.tipos);
-          setEstados(opciones.estados);
+          if (!opcionesCargadas) {
+            const opciones = await getProductOptions();
+            setOpciones(opciones);
+          }
+        
         } catch (err) {
           console.log("Error cargando perfil o productos:", err);
           setPerfil(null);
@@ -80,29 +104,39 @@ const Perfil = () => {
     }, [user])
   );
 
-
-  const handleDeleteProduct = async (id: number) => {
-    Alert.alert(
-      "Eliminar producto",
-      "¿Estás seguro de que quieres eliminar este producto?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        {
-          text: "Eliminar",
-          style: "destructive",
-          onPress: async () => {
-            try {
-              await deleteProduct(id);
-              Alert.alert("Éxito", "Producto eliminado correctamente");
-              await loadMyProducts();
-            } catch (error) {
-              Alert.alert("Error", "No se pudo eliminar el producto");
-            }
-          },
-        },
-      ]
-    );
+  const openDeleteModal = (id: number) => {
+    setProductToDelete(id);
+    setModalVisible(true);
   };
+
+  const handleConfirmDelete = async () => {
+    if (!productToDelete) return;
+
+    try {
+      await deleteProduct(productToDelete);
+      Toast.show({
+        type: "success",
+        text1: "Producto eliminado",
+        text2: "Se eliminó correctamente el producto.",
+      });
+      await loadMyProducts();
+    } catch (error) {
+      Toast.show({
+        type: "error",
+        text1: "Error",
+        text2: "No se pudo eliminar el producto",
+      });
+    } finally {
+      setModalVisible(false);
+      setProductToDelete(null);
+    }
+  };
+
+  const handleCancelDelete = () => {
+    setModalVisible(false);
+    setProductToDelete(null);
+  };
+
 
 
   const handleLogout = async () => {
@@ -129,26 +163,33 @@ const Perfil = () => {
     }
   };
 
-  const productosFiltradosUsuario = useMemo(() => {
-    let filtrados = [...productosUsuario];
-    if (categoria)
-      filtrados = filtrados.filter(
-        (p) => p.categoria?.nombre?.toLowerCase() === categoria.toLowerCase()
-      );
-    if (estado)
-      filtrados = filtrados.filter(
-        (p) => p.estado?.nombre?.toLowerCase() === estado.toLowerCase()
-      );
-    if (tipo)
-      filtrados = filtrados.filter(
-        (p) => p.tipo?.nombre?.toLowerCase() === tipo.toLowerCase()
-      );
+const productosFiltradosUsuario = useMemo(() => {
+  let filtrados = productosUsuario.filter(p => p.visibilidad !== false);
 
-    if (orden === "asc") filtrados.sort((a, b) => (a.precio ?? 0) - (b.precio ?? 0));
-    else if (orden === "desc") filtrados.sort((a, b) => (b.precio ?? 0) - (a.precio ?? 0));
+  if (categoriaFiltro)
+    filtrados = filtrados.filter(
+      (p) => p.categoria?.nombre?.toLowerCase() === categoriaFiltro.toLowerCase()
+    );
 
-    return filtrados;
-  }, [productosUsuario, categoria, estado, tipo, orden]);
+  if (estadoFiltro)
+    filtrados = filtrados.filter(
+      (p) => p.estado?.nombre?.toLowerCase() === estadoFiltro.toLowerCase()
+    );
+
+  if (tipoFiltro)
+    filtrados = filtrados.filter(
+      (p) => p.tipo?.nombre?.toLowerCase() === tipoFiltro.toLowerCase()
+    );
+
+  if (orden === "asc")
+    filtrados.sort((a, b) => (a.precio ?? 0) - (b.precio ?? 0));
+
+  else if (orden === "desc")
+    filtrados.sort((a, b) => (b.precio ?? 0) - (a.precio ?? 0));
+
+  return filtrados;
+}, [productosUsuario, categoriaFiltro, estadoFiltro, tipoFiltro, orden]);
+
 
   if (loading) {
     return (
@@ -166,7 +207,7 @@ const Perfil = () => {
       <SafeAreaView style={{ flex: 1, backgroundColor: colors.fondo }}>
         <View style={styles.center}>
           <Text>No se encontró información del perfil.</Text>
-      
+
         </View>
       </SafeAreaView>
     );
@@ -268,7 +309,8 @@ const Perfil = () => {
                       opciones: { categorias, tipos, estados },
                     })
                   }
-                  onDelete={() => handleDeleteProduct(item.id)}
+                  onDelete={() => openDeleteModal(item.id)}
+
                   isOwner={true}
                 />
 
@@ -281,6 +323,29 @@ const Perfil = () => {
               scrollEnabled={false}
             />
           </View>
+
+          <Modal
+            visible={modalVisible}
+            transparent
+            animationType="fade"
+            onRequestClose={handleCancelDelete}
+          >
+            <View style={styles.modalOverlay}>
+              <View style={styles.modalContainer}>
+                <Text style={styles.modalTitle}>Eliminar producto</Text>
+                <Text style={styles.modalMessage}>¿Estás seguro de que quieres eliminar este producto?</Text>
+                <View style={styles.modalButtons}>
+                  <TouchableOpacity style={[styles.modalButton, { backgroundColor: colors.letraSecundaria }]} onPress={handleCancelDelete}>
+                    <Text style={{ color: colors.fondo, fontWeight: "600" }}>Cancelar</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.modalButton, { backgroundColor: colors.error }]} onPress={handleConfirmDelete}>
+                    <Text style={{ color: colors.fondo, fontWeight: "600" }}>Eliminar</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </Modal>
+
         </ScrollView>
       </KeyboardAvoidingView>
       <Toast />
@@ -390,6 +455,49 @@ const styles = StyleSheet.create({
     color: colors.letraSecundaria,
     fontSize: fonts.small,
   },
+
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+
+  modalContainer: {
+    width: "85%",
+    backgroundColor: colors.fondo,
+    borderRadius: RFValue(16),
+    padding: RFPercentage(3),
+  },
+
+  modalTitle: {
+    fontSize: fonts.medium,
+    fontWeight: "700",
+    marginBottom: RFPercentage(1.5),
+    color: colors.letraTitulos,
+    textAlign: "center",
+  },
+
+  modalMessage: {
+    fontSize: fonts.normal,
+    color: colors.letraSecundaria,
+    textAlign: "center",
+    marginBottom: RFPercentage(2),
+  },
+
+  modalButtons: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+
+  modalButton: {
+    flex: 1,
+    paddingVertical: RFValue(10),
+    borderRadius: RFValue(10),
+    marginHorizontal: RFValue(5),
+    alignItems: "center",
+  },
+
 });
 
 export default Perfil;

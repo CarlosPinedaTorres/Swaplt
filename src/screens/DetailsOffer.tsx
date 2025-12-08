@@ -5,15 +5,16 @@ import {
   TouchableOpacity,
   StyleSheet,
   Modal,
-  Alert,
   ScrollView,
+  Button,
 } from "react-native";
-import { useRoute } from "@react-navigation/native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 import { useAuthStore } from "../store/useAuthStore";
 import {
   acceptOperation,
   rejectOperation,
   getOperationById,
+  deleteOfferOperation,
 } from "../services/Offers/offerService";
 import {
   createOperationPaymentIntent,
@@ -24,8 +25,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { RFPercentage, RFValue } from "react-native-responsive-fontsize";
 import { fonts } from "../Styles/Fonts";
 import { CardForm, useStripe } from "@stripe/stripe-react-native";
+import Toast from "react-native-toast-message";
 
 const DetailsOffer = () => {
+  const [isPaying, setIsPaying] = useState(false);
+  const navigation = useNavigation();
   const route = useRoute();
   const { offer } = route.params as any;
   const user = useAuthStore((state) => state.user);
@@ -33,9 +37,19 @@ const DetailsOffer = () => {
   const [currentOffer, setCurrentOffer] = useState(offer);
   const isSeller = currentOffer.receiverId === user?.id;
   const isBuyer = currentOffer.requesterId === user?.id;
-
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
   const { confirmPayment: stripeConfirmPayment } = useStripe();
   const [paymentModalVisible, setPaymentModalVisible] = useState(false);
+  const canDelete = !["COMPLETED", "PAID"].includes(currentOffer.status);
+  const handleDeleteOffer = async () => {
+    try {
+      await deleteOfferOperation(currentOffer.id);
+      Toast.show({ type: "success", text1: "Oferta eliminada correctamente" });
+      navigation.goBack();
+    } catch {
+      Toast.show({ type: "error", text1: "Error", text2: "No se pudo eliminar la oferta" });
+    }
+  };
 
   const refreshOffer = async () => {
     try {
@@ -50,9 +64,13 @@ const DetailsOffer = () => {
     try {
       const updatedOffer = await acceptOperation(currentOffer.id);
       setCurrentOffer(updatedOffer);
-      Alert.alert("Éxito", "La oferta ha sido aceptada. Pendiente de pago.");
+      Toast.show({
+        type: "success",
+        text1: "Oferta aceptada",
+        text2: "La oferta ha sido aceptada.",
+      });
     } catch (error) {
-      Alert.alert("Error", "No se pudo aceptar la oferta.");
+      Toast.show({ type: "error", text1: "Error", text2: "No se pudo aceptar la oferta." });
     }
   };
 
@@ -60,14 +78,21 @@ const DetailsOffer = () => {
     try {
       const updatedOffer = await rejectOperation(currentOffer.id);
       setCurrentOffer(updatedOffer);
-      Alert.alert("Operación rechazada", "Has rechazado la oferta.");
+      Toast.show({
+        type: "info",
+        text1: "Oferta rechazada",
+        text2: "Has rechazado la oferta.",
+      });
     } catch (error) {
-      Alert.alert("Error", "No se pudo rechazar la oferta.");
+      Toast.show({ type: "error", text1: "Error", text2: "No se pudo rechazar la oferta." });
     }
   };
 
   const handleComprar = async () => {
     try {
+      if (isPaying) return;
+
+      setIsPaying(true);
       const { clientSecret } = await createOperationPaymentIntent(currentOffer.id);
 
       const { error } = await stripeConfirmPayment(clientSecret, {
@@ -81,19 +106,26 @@ const DetailsOffer = () => {
       });
 
       if (error) {
-        Alert.alert("Error", error.message || "No se pudo procesar el pago");
+        Toast.show({ type: "error", text1: "Error", text2: error.message || "No se pudo procesar el pago" });
         return;
       }
 
       await confirmOperationPayment(currentOffer.id);
       await refreshOffer();
 
-      Alert.alert("Éxito", "Pago realizado correctamente");
+      Toast.show({
+        type: "success",
+        text1: "Pago realizado",
+        text2: "Pago realizado correctamente",
+      });
       setPaymentModalVisible(false);
+      setIsPaying(false);
     } catch (err) {
-      Alert.alert("Error", "No se pudo procesar el pago");
+      Toast.show({ type: "error", text1: "Error", text2: "No se pudo procesar el pago" });
+      setIsPaying(false);
     }
   };
+  console.log(currentOffer)
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -134,7 +166,7 @@ const DetailsOffer = () => {
           <Text style={styles.value}>{currentOffer.receiver?.nombre}</Text>
         </View>
 
-  
+
         {isSeller && currentOffer.status === "PENDING" && (
           <View style={styles.buttonsContainer}>
             <TouchableOpacity style={[styles.button, styles.accept]} onPress={handleAccept}>
@@ -155,6 +187,31 @@ const DetailsOffer = () => {
             <Text style={styles.buttonText}>Pagar con tarjeta</Text>
           </TouchableOpacity>
         )}
+        {canDelete && (
+          <TouchableOpacity
+            style={[styles.button, styles.reject]}
+            onPress={() => setDeleteModalVisible(true)}
+          >
+            <Text style={styles.buttonText}>Eliminar oferta</Text>
+          </TouchableOpacity>
+        )}
+        <Modal visible={deleteModalVisible} transparent animationType="fade">
+          <View style={styles.modalBackground}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.modalTitle}>Eliminar oferta</Text>
+              <Text style={{ textAlign: "center", marginVertical: RFPercentage(2) }}>
+                ¿Estás seguro de que deseas eliminar esta oferta?
+              </Text>
+              <Button title="Eliminar" onPress={handleDeleteOffer} color={colors.error} />
+              <TouchableOpacity
+                style={[styles.modalButton, { backgroundColor: colors.letraSecundaria }]}
+                onPress={() => setDeleteModalVisible(false)}
+              >
+                <Text style={styles.modalButtonText}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       </ScrollView>
 
 
@@ -167,29 +224,37 @@ const DetailsOffer = () => {
         <View style={styles.modalBackground}>
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Pago con tarjeta</Text>
-
             <CardForm
-              onFormComplete={(cardDetails) => console.log(cardDetails)}
-              style={{ width: "100%", height: RFPercentage(40) }}
+              defaultValues={{
+                countryCode: "ES",
+              }}
+              onFormComplete={(cardDetails) => {
+                console.log(cardDetails);
+              }}
+              style={{
+                width: "100%",
+                height: RFPercentage(40),
+              }}
               cardStyle={{
                 backgroundColor: colors.fondoSecundario,
-                textColor: "#000",
-                placeholderColor: "#000",
+                textColor: "#000000",
+                placeholderColor: "#000000",
+                borderRadius: 2,
+                fontSize: fonts.medium,
               }}
             />
 
-            <TouchableOpacity
-              style={[styles.button, styles.pay]}
+            <Button
+              title={isPaying ? "Procesando..." : "Pagar ahora"}
               onPress={handleComprar}
-            >
-              <Text style={styles.buttonText}>Pagar ahora</Text>
-            </TouchableOpacity>
-
+              color={colors.letraTitulos}
+              disabled={isPaying}
+            />
             <TouchableOpacity
-              style={[styles.button, styles.cancel]}
+              style={[styles.modalButton, { backgroundColor: colors.letraSecundaria }]}
               onPress={() => setPaymentModalVisible(false)}
             >
-              <Text style={styles.buttonText}>Cancelar</Text>
+              <Text style={styles.modalButtonText}>Cancelar</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -294,4 +359,23 @@ const styles = StyleSheet.create({
     marginBottom: RFPercentage(2),
     color: colors.letraTitulos,
   },
+
+
+
+
+
+
+  modalButton: {
+    backgroundColor: colors.botonFondo,
+    paddingVertical: RFPercentage(1.5),
+    borderRadius: RFValue(8),
+    marginVertical: RFPercentage(1),
+  },
+  modalButtonText: {
+    textAlign: "center",
+    fontSize: RFPercentage(2),
+    color: "#fff",
+    fontWeight: "bold",
+  },
+
 });

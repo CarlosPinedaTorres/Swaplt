@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, Image, ScrollView } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet,  Image, ScrollView } from "react-native";
 import { launchImageLibrary } from "react-native-image-picker";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { RFPercentage } from "react-native-responsive-fontsize";
@@ -8,6 +8,7 @@ import { colors } from "../Styles/Colors";
 import { fonts } from "../Styles/Fonts";
 import { editUser } from "../services/user/userService";
 import api from "../services/api";
+import Toast from "react-native-toast-message";
 
 const EditarPerfil = ({ navigation }: any) => {
     const { perfil, setPerfil } = useAuthStore();
@@ -27,11 +28,19 @@ const EditarPerfil = ({ navigation }: any) => {
                 fotoPerfil: image,
             });
             setPerfil(updated);
-            Alert.alert("Éxito", "Perfil actualizado correctamente");
+            Toast.show({
+                type: "success",
+                text1: "Perfil actualizado",
+                text2: "Perfil actualizado correctamente",
+            });
             navigation.goBack();
         } catch (error) {
             console.log(error);
-            Alert.alert("Error", "No se pudo actualizar el perfil");
+            Toast.show({
+                type: "error",
+                text1: "Error",
+                text2: "No se pudo actualizar el perfil",
+            });
         }
     };
 
@@ -53,9 +62,18 @@ const EditarPerfil = ({ navigation }: any) => {
                 headers: { 'Content-Type': "multipart/form-data" },
             });
             setImage(response.data.url);
+            Toast.show({
+                type: "success",
+                text1: "Imagen subida",
+                text2: "La imagen se ha subido correctamente",
+            });
         } catch (error) {
             console.log('Error al subir imagen:', error);
-            Alert.alert("Error", "No se pudo subir la imagen");
+            Toast.show({
+                type: "success",
+                text1: "Imagen subida",
+                text2: "La imagen se ha subido correctamente",
+            });
         }
     };
 
@@ -158,7 +176,7 @@ const styles = StyleSheet.create({
         marginTop: RFPercentage(2),
     },
     saveText: {
-        fontSize: fonts.medium, 
+        fontSize: fonts.medium,
         color: "#fff"
     },
 });

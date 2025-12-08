@@ -5,7 +5,7 @@ import { useProductStore } from "../store/useProductStore";
 import { colors } from "../Styles/Colors";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {  RFPercentage } from "react-native-responsive-fontsize";
+import { RFPercentage } from "react-native-responsive-fontsize";
 import { fonts } from "../Styles/Fonts";
 import Title from "../components/Title";
 import ProductCard from "../components/ProductCard";
@@ -39,9 +39,9 @@ export default function Inicio() {
             getAllProducts(),
             getProductOptions()
           ]);
-        
-          setProductosGlobales(productos);
-    
+
+          setProductosGlobales(productos.filter((p:any) => p.visibilidad === true));
+
           setCategorias(opciones.categorias);
           setTipos(opciones.tipos);
           setEstados(opciones.estados);
@@ -92,7 +92,7 @@ export default function Inicio() {
       </View>
     );
   }
- 
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
@@ -107,7 +107,7 @@ export default function Inicio() {
           setOrden={setOrden}
         />
 
-       
+
 
         <FlatList
           data={productosFiltrados}
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  
+
   emptyText: {
     textAlign: "center",
     marginTop: RFPercentage(3),

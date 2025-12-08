@@ -1,4 +1,4 @@
-import { View, TextInput, Button, Alert, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, Image, ScrollView } from 'react-native'
+import { View, StyleSheet, Text, TouchableOpacity, TouchableWithoutFeedback, Image, ScrollView } from 'react-native'
 import React, { useState } from 'react'
 import { UserData } from '../types/User';
 import { registerUser } from '../services/user/userService';
@@ -28,6 +28,7 @@ export default function Register() {
     ciudad: '',
     email: '',
     password: '',
+    confirmPassword: '',
     fechaNacimiento: '',
   });
 
@@ -44,7 +45,8 @@ export default function Register() {
     ciudad: "",
     email: "",
     password: "",
-    fotoPerfil: "",
+    confirmPassword: "",
+    fotoPerfil: ""
 
   });
 
@@ -136,13 +138,14 @@ export default function Register() {
     return null;
   };
   const handleRegister = async () => {
-    const { nombre, apellidos, ciudad, email, password, fechaNacimiento } = formData;
+    const { nombre, apellidos, ciudad, email, password, fechaNacimiento, confirmPassword } = formData;
     const newErrors: any = {};
     if (!formData.nombre) newErrors.nombre = 'Nombre es obligatorio';
     if (!formData.apellidos) newErrors.apellidos = 'Apellidos son obligatorios';
     if (!formData.ciudad) newErrors.ciudad = 'Ciudad es obligatoria';
     if (!formData.email) newErrors.email = 'Email es obligatorio';
     if (!formData.password) newErrors.password = 'Contraseña es obligatoria';
+    if (password !== confirmPassword) newErrors.confirmPassword = "Las contraseñas no coinciden";
     const fechaError = validateFechaNacimiento(formData.fechaNacimiento);
     if (fechaError) newErrors.fechaNacimiento = fechaError;
 
@@ -255,6 +258,19 @@ export default function Register() {
               <CustomInput placeholder='Password' value={formData.password} onChangeText={value => handleChange("password", value)} secureTextEntry />
 
             </View>
+
+            <View style={{ flexShrink: 1 }}>
+              {errors.confirmPassword ? (
+                <Text style={styles.errorText}>{errors.confirmPassword}</Text>
+              ) : null}
+              <CustomInput
+                placeholder='Confirmar contraseña'
+                value={formData.confirmPassword}
+                onChangeText={value => handleChange("confirmPassword", value)}
+                secureTextEntry
+              />
+            </View>
+
             <View style={{ flexShrink: 1 }}>
 
               {errors.fechaNacimiento ? (
