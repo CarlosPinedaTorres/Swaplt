@@ -110,7 +110,7 @@ const TradeOffer = () => {
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.itemNombre}>{item.nombre}</Text>
                                     <Text style={styles.itemPrecio}>
-                                        {item.precio ? `${item.precio} €` : "Sin precio"}
+                                        {item.precio ? `${item.precio} €` : "Intercambio"}
                                     </Text>
                                 </View>
                             </TouchableOpacity>
