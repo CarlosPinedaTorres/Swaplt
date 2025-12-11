@@ -17,19 +17,16 @@ export interface MessageData {
   sender: { id: number; nombre: string };
 }
 
-
 export const createOrGetChat = async (user1Id: number, user2Id: number, productId: number): Promise<ChatData> => {
   const { data } = await api.post("/chats/create", { user1Id, user2Id, productId });
   connectSocket(data.id); 
   return data;
 };
 
-
 export const deleteChat = async (chatId: number): Promise<{ message: string }> => {
   const { data } = await api.delete(`/chats/delete/${chatId}`);
   return data; 
 };
-
 
 
 export const sendMessage = async (chatId: number, senderId: number, content: string): Promise<MessageData> => {

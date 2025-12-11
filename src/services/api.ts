@@ -7,7 +7,7 @@ const api = axios.create({
   baseURL: "https://back-production-7b31.up.railway.app",
   timeout: 10000,
 });
-
+// Queueing concurrent 401 requests during token refresh
 let isRefreshing = false;
 let refreshSubscribers: ((token: string) => void)[] = [];
 
